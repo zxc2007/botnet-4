@@ -78,7 +78,7 @@ class BotHandler(threading.Thread):
             RecvBotCmd = self.q.get()
             try:
                 self.client.send(RecvBotCmd.encode("utf-8"))
-                recVal = (self.client.recv(1024)).decode("utf-8")
+                recVal = (self.client.recv(4096)).decode("utf-8")
                 print(self.ip + ":" + str(self.port) + " : " + recVal)
                 
             except Exception as ex:
